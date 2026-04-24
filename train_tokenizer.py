@@ -16,15 +16,30 @@ from tokenizers import Tokenizer, models, trainers, pre_tokenizers, processors, 
 def extract_text_from_jsonl(path: Path) -> list[str]:
     """Extract text field from JSONL for training."""
     texts = []
-    with open(path) as f:
-        for line in f:
-            if line.strip():
+    errors = 0
+    with open(path, encoding="utf-8") as f:
+        for i, line in enumerate(f, 1):
+            if not line.strip():
+                continue
+            try:
                 obj = json.loads(line)
                 # Common field names for text
                 for key in ["text", "content", "prompt", "completion"]:
                     if key in obj:
                         texts.append(obj[key])
                         break
+            except json.JSONDecodeError as e:
+                errors += 1
+                if errors <= 5:
+                    preview = line[:80].replace('\n', '\\n')
+                    print(f"Warning: Skipping line {i}: {e.msg}")
+                    print(f"  Preview: {preview}...")
+                elif errors == 6:
+                    print("  (suppressing further warnings...)")
+    
+    if errors:
+        print(f"\nSkipped {errors} malformed lines out of {i} total")
+    
     return texts
 
 
