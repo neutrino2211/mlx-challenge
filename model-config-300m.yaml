@@ -1,0 +1,81 @@
+# QRK 300M Model Config
+# Max comfortable size for 16GB M1 Pro
+# ~20-30 min per epoch on 150MB data
+
+name: "QRK-300M"
+overwrite: true
+
+data:
+  input_file: "train.jsonl"
+  validation_file: "val.jsonl"
+  tokenizer_path: "tokenizer"
+  preprocessing:
+    max_context_size: 1024
+    chunk_overlap: 0
+
+  tokenizer:
+    normal_vocab_size: 256
+    special_tokens:
+      pad: "<pad>"
+      bos: "<s>"
+      eos: "</s>"
+      knowledge_start: "<knowledge>"
+      knowledge_end: "</knowledge>"
+      k_res: "<k_res>"
+      k_end: "<k_end>"
+
+model:
+  architecture: "llama"
+  dimensions:
+    hidden_size: 1536
+    intermediate_size: 4096  # ~2.7x hidden
+    num_layers: 8
+  attention:
+    num_heads: 12
+    num_kv_heads: 4          # GQA: saves memory at this scale
+    head_dim: null
+    max_position_embeddings: 1024
+  normalization:
+    rms_norm_eps: 1.0e-6
+  rope:
+    theta: 10000
+    traditional: false
+    scaling: null
+  misc:
+    attention_bias: false
+    mlp_bias: false
+    tie_word_embeddings: true
+
+training:
+  epochs: 1
+  hyperparameters:
+    batch_size: 2            # Small batch for memory
+    learning_rate: 2.0e-4
+    weight_decay: 0.1
+    gradient_accumulation: 16  # Effective batch = 32
+
+  scheduler:
+    type: "cosine_with_warmup"
+    min_lr_ratio: 0.1
+    warmup_steps: 500
+
+  optimization:
+    optimizer: "adamw"
+
+logging:
+  log_dir: "logs"
+  checkpoint_dir: "checkpoints"
+  steps:
+    logging_interval: 50
+    checkpoint_interval: 2000
+    validation_interval: 1000
+  metrics:
+    log_loss: true
+    log_perplexity: true
+    log_tokens_per_second: true
+    log_learning_rate: true
+    log_tokens_processed: true
+
+system:
+  seed: 42
+  device: "gpu"

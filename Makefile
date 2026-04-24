@@ -67,6 +67,9 @@ train-50m: check-mlx-pretrain check-tokenizer
 train-150m: check-mlx-pretrain check-tokenizer
 	python $(MLX_PRETRAIN)/train.py --config model-config-150m.yaml
 
+train-300m: check-mlx-pretrain check-tokenizer
+	python $(MLX_PRETRAIN)/train.py --config model-config-300m.yaml
+
 generate: check-mlx-pretrain
 	python $(MLX_PRETRAIN)/generate.py --run $(RUN) --prompt $(PROMPT)
 
