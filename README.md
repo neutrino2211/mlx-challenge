@@ -10,14 +10,18 @@ Configuration files for training small LLMs using [mlx-pretrain](https://github.
 
 ## Usage
 
-1. Install mlx-pretrain:
+1. Install dependencies:
 ```bash
-pip install mlx-pretrain
+pip install mlx-pretrain tokenizers
 ```
 
 2. Train tokenizer:
 ```bash
-mlx-pretrain tokenizer --config tokenizer-config.yaml
+# From JSONL (expects "text" field)
+python train_tokenizer.py --data train.jsonl --output tokenizer/
+
+# From plain text
+python train_tokenizer.py --data train.txt --output tokenizer/ --vocab-size 32000
 ```
 
 3. Train model (start with 50M to validate setup):
