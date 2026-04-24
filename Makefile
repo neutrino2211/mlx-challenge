@@ -9,7 +9,7 @@ RUN ?= QRK-50M
 PROMPT ?= "Hello, world!"
 MLX_PRETRAIN ?= mlx-pretrain
 
-.PHONY: help setup tokenizer train-50m train-150m train generate clean
+.PHONY: help setup tokenizer train-50m train-150m train generate clean fix-jsonl
 
 help:
 	@echo "MLX Challenge Training"
@@ -83,46 +83,10 @@ clean:
 clean-all: clean
 	rm -rf $(MLX_PRETRAIN)/
 
-# Fix multiline JSON to proper JSONL
 fix-jsonl:
 	@test -f $(DATA) || (echo "Error: $(DATA) not found" && exit 1)
-	@echo "Fixing multiline JSON in $(DATA)..."
-	@python3 -c "\
-import json; \
-content = open('$(DATA)', 'r').read(); \
-objects = []; buffer = ''; brace_count = 0; \
-[exec('brace_count += 1') if c == '{' else exec('brace_count -= 1; objects.append(json.loads(buffer)) if brace_count == 0 and buffer.strip() else None; buffer = \"\" if brace_count == 0 else buffer') if c == '}' else None for c in content for buffer in [buffer + c]]; \
-exit(1) if not objects else None; \
-open('$(DATA).fixed', 'w').writelines(json.dumps(o) + '\n' for o in objects); \
-print(f'Converted {len(objects)} objects to proper JSONL')" 2>/dev/null || \
-	python3 -c "\
-import json
-content = open('$(DATA)', 'r').read()
-objects = []
-buffer = ''
-brace_count = 0
-for char in content:
-    buffer += char
-    if char == '{':
-        brace_count += 1
-    elif char == '}':
-        brace_count -= 1
-        if brace_count == 0 and buffer.strip():
-            try:
-                obj = json.loads(buffer)
-                objects.append(obj)
-            except:
-                pass
-            buffer = ''
-with open('$(DATA).fixed', 'w') as f:
-    for obj in objects:
-        f.write(json.dumps(obj) + '\n')
-print(f'Converted {len(objects)} objects to proper JSONL')"
-	@mv $(DATA) $(DATA).original
-	@mv $(DATA).fixed $(DATA)
-	@echo "Original saved as $(DATA).original"
+	python fix_jsonl.py $(DATA)
 
-# Quick test with small subset
 test-tokenizer:
 	@echo "Testing tokenizer..."
 	python -c "from tokenizers import Tokenizer; t = Tokenizer.from_file('$(TOKENIZER_DIR)/tokenizer.json'); print('Vocab:', t.get_vocab_size()); r = t.encode('Hello <knowledge>test</knowledge>'); print('Tokens:', r.tokens)"
