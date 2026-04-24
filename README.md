@@ -8,24 +8,44 @@ Configuration files for training small LLMs using [mlx-pretrain](https://github.
 - `model-config-150m.yaml` - 150M parameter model (~8-12 hours for 100M tokens)
 - `tokenizer-config.yaml` - BPE tokenizer with thought injection special tokens
 
+## Quick Start
+
+```bash
+make install                  # Install deps
+make tokenizer DATA=train.jsonl   # Train tokenizer
+make train MODEL=50m          # Train 50M model
+```
+
 ## Usage
 
-1. Install dependencies:
+```bash
+# See all commands
+make help
+
+# Train tokenizer from your data
+make tokenizer DATA=my_data.jsonl
+make tokenizer DATA=corpus.txt VOCAB_SIZE=16000
+
+# Train models
+make train-50m      # ~2-3 hours, safe for 16GB
+make train-150m     # ~8-12 hours
+
+# Test tokenizer works
+make test-tokenizer
+
+# Clean up
+make clean
+```
+
+### Manual (without Make)
+
 ```bash
 pip install mlx-pretrain tokenizers
-```
 
-2. Train tokenizer:
-```bash
-# From JSONL (expects "text" field)
+# Tokenizer
 python train_tokenizer.py --data train.jsonl --output tokenizer/
 
-# From plain text
-python train_tokenizer.py --data train.txt --output tokenizer/ --vocab-size 32000
-```
-
-3. Train model (start with 50M to validate setup):
-```bash
+# Train
 mlx-pretrain train --config model-config-50m.yaml
 ```
 
