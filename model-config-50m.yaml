@@ -1,46 +1,75 @@
-# QRK 50M Model Config (SAFE for 16GB)
-# Use this first to validate setup!
-# ~2-3 hours for 100M tokens
+# QRK 50M Model Config
+# Safe for 16GB Mac, ~2-3 hours for 100M tokens
+
+name: "QRK-50M"
+overwrite: true
+
+data:
+  input_file: "train.jsonl"
+  validation_file: "val.jsonl"  # Optional
+  tokenizer_path: "tokenizer"   # Directory containing tokenizer.json
+  preprocessing:
+    max_context_size: 1024
+    chunk_overlap: 0
+
+  tokenizer:
+    normal_vocab_size: 256
+    special_tokens:
+      pad: "<pad>"
+      bos: "<s>"
+      eos: "</s>"
+      # Thought injection tokens
+      knowledge_start: "<knowledge>"
+      knowledge_end: "</knowledge>"
+      k_res: "<k_res>"
+      k_end: "<k_end>"
 
 model:
-  name: "QRK-50M"
   architecture: "llama"
-  
-  # Smaller architecture (~50M total)
-  hidden_size: 512
-  num_hidden_layers: 8
-  num_attention_heads: 8
-  num_key_value_heads: 8
-  intermediate_size: 1408       # ~2.75x hidden
-  max_position_embeddings: 1024
-  
-  vocab_size: 32000
-  
-  rms_norm_eps: 1.0e-6
-  rope_theta: 10000.0
-  tie_word_embeddings: true
+  dimensions:
+    hidden_size: 512
+    intermediate_size: 1408  # ~2.75x hidden (SwiGLU)
+    num_layers: 8
+  attention:
+    num_heads: 8
+    num_kv_heads: null       # Full attention at this scale
+    head_dim: null
+    max_position_embeddings: 1024
+  normalization:
+    rms_norm_eps: 1.0e-6
+  rope:
+    theta: 10000
+    traditional: false
+    scaling: null
+  misc:
+    attention_bias: false
+    mlp_bias: false
+    tie_word_embeddings: true
 
 training:
-  data_path: "train.jsonl"
-  val_data_path: "val.jsonl"
-  tokenizer_path: "tokenizer/tokenizer.json"
-  
+  epochs: 1
   hyperparameters:
-    batch_size: 8               # Can go higher with smaller model
-    gradient_accumulation: 4    # Effective batch = 32
+    batch_size: 8
     learning_rate: 5.0e-4
-    min_learning_rate: 5.0e-5
     weight_decay: 0.1
-    warmup_steps: 300
-    iters: 12500                # 100M tokens
-    seq_length: 1024
-    max_grad_norm: 1.0
-  
-  save_every: 2500
-  eval_every: 500
-  log_every: 25
-  output_dir: "runs"
+    # iters: 12500  # Uncomment to use iterations instead of epochs
 
-optimization:
-  dtype: "bfloat16"
-  gradient_checkpointing: false  # Not needed for 50M
+  scheduler:
+    type: "cosine_with_warmup"
+    min_lr_ratio: 0.1
+    warmup_steps: 300
+
+  optimization:
+    optimizer: "adamw"
+
+logging:
+  log_dir: "logs"
+  checkpoint_dir: "checkpoints"
+  steps:
+    logging_interval: 25
+    checkpoint_interval: 2500
+    validation_interval: 500
+
+system:
+  seed: 42
+  device: "gpu"
