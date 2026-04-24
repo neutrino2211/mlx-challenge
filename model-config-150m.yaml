@@ -70,6 +70,12 @@ logging:
     logging_interval: 50
     checkpoint_interval: 2500
     validation_interval: 1000
+  metrics:
+    log_loss: true
+    log_perplexity: true
+    log_tokens_per_second: true
+    log_learning_rate: true
+    log_tokens_processed: true
 
 system:
   seed: 42
