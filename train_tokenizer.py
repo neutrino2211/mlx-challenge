@@ -14,31 +14,69 @@ from tokenizers import Tokenizer, models, trainers, pre_tokenizers, processors, 
 
 
 def extract_text_from_jsonl(path: Path) -> list[str]:
-    """Extract text field from JSONL for training."""
+    """Extract text field from JSONL for training.
+    
+    Handles both proper JSONL and malformed JSONL with multiline strings.
+    """
     texts = []
-    errors = 0
+    
     with open(path, encoding="utf-8") as f:
-        for i, line in enumerate(f, 1):
+        content = f.read()
+    
+    # First, try line-by-line (proper JSONL)
+    lines = content.split('\n')
+    line_by_line_works = True
+    
+    for line in lines[:10]:  # Test first 10 lines
+        if line.strip():
+            try:
+                json.loads(line)
+            except json.JSONDecodeError:
+                line_by_line_works = False
+                break
+    
+    if line_by_line_works:
+        # Standard JSONL processing
+        print("Detected: proper JSONL format")
+        for i, line in enumerate(lines, 1):
             if not line.strip():
                 continue
             try:
                 obj = json.loads(line)
-                # Common field names for text
                 for key in ["text", "content", "prompt", "completion"]:
                     if key in obj:
                         texts.append(obj[key])
                         break
-            except json.JSONDecodeError as e:
-                errors += 1
-                if errors <= 5:
-                    preview = line[:80].replace('\n', '\\n')
-                    print(f"Warning: Skipping line {i}: {e.msg}")
-                    print(f"  Preview: {preview}...")
-                elif errors == 6:
-                    print("  (suppressing further warnings...)")
-    
-    if errors:
-        print(f"\nSkipped {errors} malformed lines out of {i} total")
+            except json.JSONDecodeError:
+                pass
+    else:
+        # Multiline JSON objects - need to parse differently
+        print("Detected: multiline JSON objects, reconstructing...")
+        
+        # Accumulate lines until we get valid JSON
+        buffer = ""
+        obj_count = 0
+        
+        for line in lines:
+            buffer += line + "\n"
+            
+            # Try to parse when we see what looks like object end
+            if line.strip().endswith('}') or line.strip().endswith('},'):
+                # Clean trailing comma if present
+                test_buffer = buffer.rstrip().rstrip(',')
+                try:
+                    obj = json.loads(test_buffer)
+                    for key in ["text", "content", "prompt", "completion"]:
+                        if key in obj:
+                            texts.append(obj[key])
+                            obj_count += 1
+                            break
+                    buffer = ""
+                except json.JSONDecodeError:
+                    # Not complete yet, keep accumulating
+                    pass
+        
+        print(f"Reconstructed {obj_count} JSON objects")
     
     return texts
 
