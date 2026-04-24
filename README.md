@@ -11,9 +11,22 @@ Configuration files for training small LLMs using [mlx-pretrain](https://github.
 ## Quick Start
 
 ```bash
-make install                  # Install deps
+make setup                        # Clone mlx-pretrain + install deps
 make tokenizer DATA=train.jsonl   # Train tokenizer
-make train MODEL=50m          # Train 50M model
+make train MODEL=50m              # Train 50M model
+```
+
+## Setup
+
+`mlx-pretrain` is a repo you clone, not a pip package:
+
+```bash
+# Clone mlx-pretrain into this directory
+git clone https://github.com/N8python/mlx-pretrain.git mlx-pretrain
+
+# Install dependencies (use Python 3.10 or 3.11, NOT 3.13)
+pip install -r mlx-pretrain/requirements.txt
+pip install tokenizers
 ```
 
 ## Usage
@@ -33,6 +46,9 @@ make train-150m     # ~8-12 hours
 # Test tokenizer works
 make test-tokenizer
 
+# Generate text
+make generate RUN="QRK-50M" PROMPT="Hello world"
+
 # Clean up
 make clean
 ```
@@ -40,13 +56,14 @@ make clean
 ### Manual (without Make)
 
 ```bash
-pip install mlx-pretrain tokenizers
-
-# Tokenizer
+# Tokenizer (use our script)
 python train_tokenizer.py --data train.jsonl --output tokenizer/
 
-# Train
-mlx-pretrain train --config model-config-50m.yaml
+# Train (use mlx-pretrain's train.py)
+python mlx-pretrain/train.py --config model-config-50m.yaml
+
+# Generate
+python mlx-pretrain/generate.py --run "QRK-50M" --prompt "Hello"
 ```
 
 ## Special Tokens
