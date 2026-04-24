@@ -1,0 +1,46 @@
+# QRK 50M Model Config (SAFE for 16GB)
+# Use this first to validate setup!
+# ~2-3 hours for 100M tokens
+
+model:
+  name: "QRK-50M"
+  architecture: "llama"
+  
+  # Smaller architecture (~50M total)
+  hidden_size: 512
+  num_hidden_layers: 8
+  num_attention_heads: 8
+  num_key_value_heads: 8
+  intermediate_size: 1408       # ~2.75x hidden
+  max_position_embeddings: 1024
+  
+  vocab_size: 32000
+  
+  rms_norm_eps: 1.0e-6
+  rope_theta: 10000.0
+  tie_word_embeddings: true
+
+training:
+  data_path: "train.jsonl"
+  val_data_path: "val.jsonl"
+  tokenizer_path: "tokenizer/tokenizer.json"
+  
+  hyperparameters:
+    batch_size: 8               # Can go higher with smaller model
+    gradient_accumulation: 4    # Effective batch = 32
+    learning_rate: 5.0e-4
+    min_learning_rate: 5.0e-5
+    weight_decay: 0.1
+    warmup_steps: 300
+    iters: 12500                # 100M tokens
+    seq_length: 1024
+    max_grad_norm: 1.0
+  
+  save_every: 2500
+  eval_every: 500
+  log_every: 25
+  output_dir: "runs"
+
+optimization:
+  dtype: "bfloat16"
+  gradient_checkpointing: false  # Not needed for 50M
