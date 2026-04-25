@@ -104,16 +104,19 @@ def train_tokenizer(
         "<s>",            # 1 - BOS
         "</s>",           # 2 - EOS  
         "<pad>",          # 3
+        # ChatML tokens
+        "<|im_start|>",   # 4 - ChatML turn start
+        "<|im_end|>",     # 5 - ChatML turn end
         # Thought Injection tokens
-        "<knowledge>",    # 4 - Model requests knowledge
-        "</knowledge>",   # 5 - End request
-        "<k_res>",        # 6 - Injected response start
-        "<k_end>",        # 7 - Injected response end
+        "<knowledge>",    # 6 - Model requests knowledge
+        "</knowledge>",   # 7 - End request
+        "<k_res>",        # 8 - Injected response start
+        "<k_end>",        # 9 - Injected response end
         # Code tokens (optional, for code tasks)
-        "<code>",         # 8
-        "</code>",        # 9
-        "<output>",       # 10
-        "</output>",      # 11
+        "<code>",         # 10
+        "</code>",        # 11
+        "<output>",       # 12
+        "</output>",      # 13
     ]
     
     # Trainer

@@ -18,6 +18,9 @@ data:
       pad: "<pad>"
       bos: "<s>"
       eos: "</s>"
+      # ChatML tokens
+      im_start: "<|im_start|>"
+      im_end: "<|im_end|>"
       # Thought injection tokens
       knowledge_start: "<knowledge>"
       knowledge_end: "</knowledge>"
