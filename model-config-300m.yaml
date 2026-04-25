@@ -36,7 +36,7 @@ model:
     num_layers: 8
   attention:
     num_heads: 12
-    num_kv_heads: null       # Full attention (GQA disabled for mlx-lm compatibility)
+    num_kv_heads: 4          # GQA: saves memory at this scale
     head_dim: null
     max_position_embeddings: 1024
   normalization:
