@@ -9,7 +9,7 @@ RUN ?= QRK-50M
 PROMPT ?= "Hello, world!"
 MLX_PRETRAIN ?= mlx-pretrain
 
-.PHONY: help setup tokenizer train-50m train-150m train generate clean fix-jsonl
+.PHONY: help setup tokenizer train-50m train-150m train generate clean fix-jsonl prepare-chatml finetune
 
 help:
 	@echo "MLX Challenge Training"
@@ -19,27 +19,36 @@ help:
 	@echo "  make tokenizer      Train tokenizer (DATA=train.jsonl)"
 	@echo "  make fix-jsonl      Fix multiline JSON to proper JSONL"
 	@echo ""
-	@echo "Training:"
-	@echo "  make train          Train model (MODEL=50m|150m)"
+	@echo "Pretraining:"
+	@echo "  make train          Train model (MODEL=50m|150m|300m)"
 	@echo "  make train-50m      Train 50M model"
 	@echo "  make train-150m     Train 150M model"
+	@echo "  make train-300m     Train 300M model"
+	@echo ""
+	@echo "Finetuning:"
+	@echo "  make prepare-chatml Prepare ChatML dataset from Hermes+Capybara"
+	@echo "  make convert-model  Convert pretrained model to mlx-lm format"
+	@echo "  make finetune       LoRA finetune on ChatML data"
+	@echo "  make fuse-lora      Fuse LoRA weights into final model"
 	@echo ""
 	@echo "Inference:"
 	@echo "  make generate       Generate text (RUN=name PROMPT=text)"
 	@echo ""
 	@echo "Options:"
-	@echo "  DATA=file.jsonl     Training data file"
-	@echo "  MODEL=50m|150m      Model size"
-	@echo "  VOCAB_SIZE=32000    Tokenizer vocab size"
-	@echo "  RUN=QRK-50M         Run name for generation"
-	@echo "  PROMPT=\"text\"       Prompt for generation"
+	@echo "  DATA=file.jsonl       Training data file"
+	@echo "  MODEL=50m|150m|300m   Model size for pretraining"
+	@echo "  VOCAB_SIZE=32000      Tokenizer vocab size"
+	@echo "  CHATML_SAMPLES=50000  Samples for ChatML dataset"
+	@echo "  FINETUNE_MODEL=QRK-300M  Model to finetune"
+	@echo "  FINETUNE_ITERS=1000   Finetuning iterations"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make setup"
-	@echo "  make fix-jsonl DATA=train.jsonl"
-	@echo "  make tokenizer DATA=train.jsonl"
-	@echo "  make train MODEL=50m"
-	@echo "  make generate RUN=\"QRK-50M\" PROMPT=\"Once upon a time\""
+	@echo "  make train MODEL=300m"
+	@echo "  make prepare-chatml CHATML_SAMPLES=20000"
+	@echo "  make convert-model FINETUNE_MODEL=QRK-300M"
+	@echo "  make finetune"
+	@echo "  make fuse-lora"
 
 setup: clone-mlx-pretrain install
 
@@ -89,6 +98,40 @@ clean-all: clean
 fix-jsonl:
 	@test -f $(DATA) || (echo "Error: $(DATA) not found" && exit 1)
 	python fix_jsonl.py $(DATA)
+
+# Finetuning
+CHATML_SAMPLES ?= 50000
+FINETUNE_DATA ?= chatml_train.jsonl
+FINETUNE_MODEL ?= QRK-300M
+LORA_LAYERS ?= 8
+FINETUNE_ITERS ?= 1000
+
+prepare-chatml:
+	pip install datasets
+	python prepare_chatml.py --samples $(CHATML_SAMPLES) --output $(FINETUNE_DATA)
+
+convert-model:
+	python $(MLX_PRETRAIN)/convert-to-mlx-lm.py --run "$(FINETUNE_MODEL)" --out-path "$(FINETUNE_MODEL)-mlx"
+
+finetune: check-finetune-data
+	pip install mlx-lm
+	python -m mlx_lm.lora \
+		--model $(FINETUNE_MODEL)-mlx \
+		--data $(FINETUNE_DATA) \
+		--train \
+		--batch-size 2 \
+		--lora-layers $(LORA_LAYERS) \
+		--iters $(FINETUNE_ITERS)
+
+fuse-lora:
+	python -m mlx_lm.fuse \
+		--model $(FINETUNE_MODEL)-mlx \
+		--adapter-path adapters \
+		--save-path $(FINETUNE_MODEL)-finetuned
+
+check-finetune-data:
+	@test -f $(FINETUNE_DATA) || (echo "Error: Run 'make prepare-chatml' first" && exit 1)
+	@test -d $(FINETUNE_MODEL)-mlx || (echo "Error: Run 'make convert-model' first" && exit 1)
 
 test-tokenizer:
 	@echo "Testing tokenizer..."
