@@ -121,7 +121,8 @@ finetune: check-finetune-data
 		--data $(FINETUNE_DATA) \
 		--train \
 		--batch-size $(FINETUNE_BATCH) \
-		--iters $(FINETUNE_ITERS)
+		--iters $(FINETUNE_ITERS) \
+		--num-layers 8
 
 fuse-lora:
 	python -m mlx_lm.fuse \
