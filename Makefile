@@ -101,36 +101,34 @@ fix-jsonl:
 
 # Finetuning
 CHATML_SAMPLES ?= 50000
-FINETUNE_DATA ?= chatml_train.jsonl
+FINETUNE_DATA ?= finetune_data
 FINETUNE_MODEL ?= QRK-300M
-LORA_LAYERS ?= 8
 FINETUNE_ITERS ?= 1000
+FINETUNE_BATCH ?= 2
 
 prepare-chatml:
 	pip install datasets
-	python prepare_chatml.py --samples $(CHATML_SAMPLES) --output $(FINETUNE_DATA)
+	mkdir -p $(FINETUNE_DATA)
+	python prepare_chatml.py --samples $(CHATML_SAMPLES) --output $(FINETUNE_DATA)/train.jsonl
 
 convert-model:
 	python $(MLX_PRETRAIN)/convert-to-mlx-lm.py --run "$(FINETUNE_MODEL)" --out-path "$(FINETUNE_MODEL)-mlx"
 
 finetune: check-finetune-data
-	pip install mlx-lm
+	pip install "mlx-lm[train]"
 	python -m mlx_lm.lora \
 		--model $(FINETUNE_MODEL)-mlx \
 		--data $(FINETUNE_DATA) \
 		--train \
-		--batch-size 2 \
-		--lora-layers $(LORA_LAYERS) \
+		--batch-size $(FINETUNE_BATCH) \
 		--iters $(FINETUNE_ITERS)
 
 fuse-lora:
 	python -m mlx_lm.fuse \
-		--model $(FINETUNE_MODEL)-mlx \
-		--adapter-path adapters \
-		--save-path $(FINETUNE_MODEL)-finetuned
+		--model $(FINETUNE_MODEL)-mlx
 
 check-finetune-data:
-	@test -f $(FINETUNE_DATA) || (echo "Error: Run 'make prepare-chatml' first" && exit 1)
+	@test -f $(FINETUNE_DATA)/train.jsonl || (echo "Error: Run 'make prepare-chatml' first" && exit 1)
 	@test -d $(FINETUNE_MODEL)-mlx || (echo "Error: Run 'make convert-model' first" && exit 1)
 
 test-tokenizer:

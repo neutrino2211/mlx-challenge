@@ -143,15 +143,17 @@ def main():
     
     # Write train
     output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
     with open(output_path, 'w', encoding='utf-8') as f:
         for sample in train_samples:
             f.write(json.dumps(sample, ensure_ascii=False) + '\n')
     
     print(f"\nWrote {len(train_samples)} training samples to {output_path}")
     
-    # Write val
+    # Write val (mlx-lm expects valid.jsonl in same directory)
     if val_samples:
-        val_path = output_path.with_stem(output_path.stem + "_val")
+        val_path = output_path.parent / "valid.jsonl"
         with open(val_path, 'w', encoding='utf-8') as f:
             for sample in val_samples:
                 f.write(json.dumps(sample, ensure_ascii=False) + '\n')
