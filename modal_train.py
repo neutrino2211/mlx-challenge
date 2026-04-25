@@ -22,6 +22,7 @@ app = modal.App("qrk-training")
 # Base image with all dependencies
 image = (
     modal.Image.debian_slim(python_version="3.11")
+    .apt_install("git")
     .pip_install([
         "mlx",
         "mlx-lm[train]",
